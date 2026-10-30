@@ -37,6 +37,18 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <receiver
+            android:name=".widget.AngelAppWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.arbdev.angel.ACTION_WIDGET_QUICK_SAVE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/angel_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

@@ -1,8 +1,6 @@
 package com.arbdev.angel.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,13 +26,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +50,7 @@ import com.arbdev.angel.util.Formatters
 @Composable
 fun GoalsScreen(
     goals: List<Goal>,
+    dailyTarget: Double,
     onCreateGoalClick: () -> Unit,
     onDepositWithdrawClick: (Goal) -> Unit,
     onEditGoalClick: (Goal) -> Unit,
@@ -66,98 +64,120 @@ fun GoalsScreen(
         else -> goals
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onCreateGoalClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        // Natural Inline Header
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(imageVector = Icons.Rounded.Add, contentDescription = "Tambah Celengan")
-            }
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            // Filter Tabs
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedFilter == "ALL",
-                        onClick = { selectedFilter = "ALL" },
-                        label = { Text("Semua (${goals.size})") }
+                Column {
+                    Text(
+                        text = "Celengan Impian",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                    FilterChip(
-                        selected = selectedFilter == "ACTIVE",
-                        onClick = { selectedFilter = "ACTIVE" },
-                        label = { Text("Aktif (${goals.count { !it.isCompleted }})") }
-                    )
-                    FilterChip(
-                        selected = selectedFilter == "COMPLETED",
-                        onClick = { selectedFilter = "COMPLETED" },
-                        label = { Text("Tercapai (${goals.count { it.isCompleted }})") }
+                    Text(
+                        text = "${goals.size} Wadah tabungan terdaftar",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
 
-            if (filteredGoals.isEmpty()) {
-                item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 24.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                Button(
+                    onClick = onCreateGoalClick,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Target Baru")
+                }
+            }
+        }
+
+        // Filter Tabs
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedFilter == "ALL",
+                    onClick = { selectedFilter = "ALL" },
+                    label = { Text("Semua (${goals.size})") }
+                )
+                FilterChip(
+                    selected = selectedFilter == "ACTIVE",
+                    onClick = { selectedFilter = "ACTIVE" },
+                    label = { Text("Aktif (${goals.count { !it.isCompleted }})") }
+                )
+                FilterChip(
+                    selected = selectedFilter == "COMPLETED",
+                    onClick = { selectedFilter = "COMPLETED" },
+                    label = { Text("Tercapai (${goals.count { it.isCompleted }})") }
+                )
+            }
+        }
+
+        if (filteredGoals.isEmpty()) {
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            modifier = Modifier.padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Tidak Ada Celengan",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Mulai impian baru Anda dengan membuat target celengan",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = onCreateGoalClick) {
-                                Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Buat Celengan Baru")
-                            }
+                        Text(
+                            text = "Tidak Ada Celengan",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Buat target celengan untuk mulai menabung",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onCreateGoalClick) {
+                            Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Buat Celengan Baru")
                         }
                     }
                 }
-            } else {
-                items(filteredGoals, key = { it.id }) { goal ->
-                    GoalCardItem(
-                        goal = goal,
-                        onDepositWithdraw = { onDepositWithdrawClick(goal) },
-                        onEdit = { onEditGoalClick(goal) },
-                        onDelete = { onDeleteGoalClick(goal) },
-                        modifier = Modifier.padding(vertical = 6.dp)
-                    )
-                }
             }
+        } else {
+            items(filteredGoals, key = { it.id }) { goal ->
+                GoalCardItem(
+                    goal = goal,
+                    dailyTarget = dailyTarget,
+                    onDepositWithdraw = { onDepositWithdrawClick(goal) },
+                    onEdit = { onEditGoalClick(goal) },
+                    onDelete = { onDeleteGoalClick(goal) },
+                    modifier = Modifier.padding(vertical = 6.dp)
+                )
+            }
+        }
 
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
@@ -165,6 +185,7 @@ fun GoalsScreen(
 @Composable
 private fun GoalCardItem(
     goal: Goal,
+    dailyTarget: Double,
     onDepositWithdraw: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -311,17 +332,21 @@ private fun GoalCardItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val estDays = goal.getEstimatedDaysRemaining(dailyTarget)
+            val estDate = goal.getEstimatedCompletionDateMillis(dailyTarget)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = if (goal.isCompleted) "Target telah tercapai" else "Kurang: ${Formatters.formatRupiah(goal.remainingAmount)}",
+                    text = if (goal.isCompleted) "Target tercapai!" else "Estimasi: ~$estDays hari lagi (${Formatters.formatDate(estDate)})",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (goal.isCompleted) StreakGreen else MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Batas: ${Formatters.formatDate(goal.targetDateMillis)}",
+                    text = "Sisa: ${Formatters.formatRupiah(goal.remainingAmount)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

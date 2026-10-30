@@ -1,6 +1,7 @@
 package com.arbdev.angel.data.model
 
 import kotlinx.serialization.Serializable
+import kotlin.math.ceil
 
 @Serializable
 data class Goal(
@@ -30,4 +31,15 @@ data class Goal(
 
     val remainingAmount: Double
         get() = (targetAmount - currentAmount).coerceAtLeast(0.0)
+
+    fun getEstimatedDaysRemaining(dailyTarget: Double): Int {
+        if (isCompleted || remainingAmount <= 0.0) return 0
+        val target = if (dailyTarget > 0.0) dailyTarget else 20000.0
+        return ceil(remainingAmount / target).toInt().coerceAtLeast(1)
+    }
+
+    fun getEstimatedCompletionDateMillis(dailyTarget: Double): Long {
+        val days = getEstimatedDaysRemaining(dailyTarget)
+        return System.currentTimeMillis() + (days.toLong() * 24L * 60L * 60L * 1000L)
+    }
 }

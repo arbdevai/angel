@@ -30,7 +30,8 @@ data class AngelBackupData(
 
 class SavingsRepository private constructor(context: Context) {
 
-    private val dbHelper = AngelDatabaseHelper(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val dbHelper = AngelDatabaseHelper(appContext)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _goals = MutableStateFlow<List<Goal>>(emptyList())
@@ -89,6 +90,10 @@ class SavingsRepository private constructor(context: Context) {
             activeGoalsCount = activeCount,
             completedGoalsCount = completedCount
         )
+        try {
+            com.arbdev.angel.widget.AngelAppWidgetProvider.updateAllWidgets(appContext)
+        } catch (_: Exception) {
+        }
     }
 
     suspend fun saveMoney(goalId: String, amount: Double, note: String): Boolean = withContext(Dispatchers.IO) {

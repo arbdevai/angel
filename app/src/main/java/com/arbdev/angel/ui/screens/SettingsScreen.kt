@@ -1,9 +1,5 @@
 package com.arbdev.angel.ui.screens
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -53,7 +50,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.arbdev.angel.util.Formatters
@@ -73,16 +69,37 @@ fun SettingsScreen(
     onRestoreBackup: (String) -> Unit,
     onClearAllData: () -> Unit
 ) {
-    val context = LocalContext.current
     var showTimeDialog by remember { mutableStateOf(false) }
     var showTargetDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     ) {
+        // Natural Inline Header
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+            ) {
+                Text(
+                    text = "Pengaturan",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Konfigurasi pengingat, audio, dan cadangan data",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         // Section: Notifikasi & Pengingat Harian
         item {
             Text(
@@ -118,7 +135,7 @@ fun SettingsScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "Ingatkan jika harian belum mengisi celengan",
+                                    text = "Peringatan jika belum menabung hari ini",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -152,7 +169,7 @@ fun SettingsScreen(
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "Jadwal pengecekan harian",
+                                    text = "Jadwal evaluasi harian otomatis",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -194,7 +211,7 @@ fun SettingsScreen(
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "Komitmen nominal per hari",
+                                    text = "Nominal setoran 1-klik harian",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -238,7 +255,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Harmoni lonceng surgawi khusus untuk notifikasi celengan",
+                                text = "Harmoni lonceng surgawi khusus celengan",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -310,7 +327,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Simpan salinan data tabungan Anda ke clipboard",
+                                text = "Salin seluruh data celengan ke papan klip",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -375,7 +392,7 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Tentang Aplikasi
+        // Section: Tentang Aplikasi & Widget
         item {
             Spacer(modifier = Modifier.height(20.dp))
             Card(
@@ -394,7 +411,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Versi 1.0.0 (Produksi Standar Developer Google)",
+                                text = "Versi 1.1.0 • Android 14 Widget Ready",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -402,7 +419,7 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Aplikasi dirancang dengan standar arsitektur Google modern: 100% offline-first dengan SQLite lokal, WorkManager hemat daya untuk pengingat harian, serta Jetpack Compose Material 3 murni bebas data tiruan.",
+                        text = "100% offline-first dengan basis data SQLite lokal, WorkManager hemat daya untuk pengingat harian, widget layar utama Android 14 interaktif dengan tombol 1-klik, dan audio notifikasi MP3 kustom.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -454,7 +471,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
             title = { Text("Konfirmasi Hapus Data") },
-            text = { Text("Seluruh data celengan dan riwayat transaksi akan dihapus secara permanen dari perangkat lokal ini. Lanjutkan?") },
+            text = { Text("Seluruh data celengan dan riwayat transaksi akan dihapus secara permanen dari perangkat lokal. Lanjutkan?") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -570,7 +587,7 @@ private fun DailyTargetDialog(
         text = {
             Column {
                 Text(
-                    text = "Tentukan komitmen nominal yang ingin Anda sisihkan setiap hari:",
+                    text = "Tentukan nominal komitmen yang ingin Anda tabung setiap hari:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
