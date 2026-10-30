@@ -51,6 +51,7 @@ import com.arbdev.angel.data.model.DailyStreakInfo
 import com.arbdev.angel.data.model.Goal
 import com.arbdev.angel.data.model.SavingsStats
 import com.arbdev.angel.data.model.TransactionRecord
+import com.arbdev.angel.ui.components.TransactionRowItem
 import com.arbdev.angel.ui.components.WeeklyStreakIndicator
 import com.arbdev.angel.ui.theme.AngelicGoldSecondary
 import com.arbdev.angel.ui.theme.HeavenlyBluePrimary

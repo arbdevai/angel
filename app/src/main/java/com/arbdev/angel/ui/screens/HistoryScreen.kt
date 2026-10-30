@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.arbdev.angel.data.model.SavingsStats
 import com.arbdev.angel.data.model.TransactionRecord
 import com.arbdev.angel.data.model.TransactionType
+import com.arbdev.angel.ui.components.TransactionRowItem
 import com.arbdev.angel.ui.theme.StreakGreen
 import com.arbdev.angel.util.Formatters
 
