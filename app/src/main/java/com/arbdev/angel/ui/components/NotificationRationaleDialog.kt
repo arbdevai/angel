@@ -32,6 +32,7 @@ fun NotificationRationaleDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
         icon = {
             Box(
                 modifier = Modifier

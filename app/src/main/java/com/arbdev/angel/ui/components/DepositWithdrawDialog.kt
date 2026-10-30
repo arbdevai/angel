@@ -1,5 +1,6 @@
 package com.arbdev.angel.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,11 +44,14 @@ fun DepositWithdrawDialog(
     var noteText by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val quickPills = listOf(10000.0, 20000.0, 50000.0, 100000.0)
+
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
         title = {
             Text(
-                text = if (selectedType == TransactionType.DEPOSIT) "Setor ke Celengan" else "Tarik dari Celengan",
+                text = if (selectedType == TransactionType.DEPOSIT) "Setor Saldo Celengan" else "Tarik Saldo Celengan",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -57,19 +62,27 @@ fun DepositWithdrawDialog(
                     .fillMaxWidth()
                     .padding(top = 4.dp)
             ) {
-                Text(
-                    text = goal.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Saldo saat ini: ${Formatters.formatRupiah(goal.currentAmount)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = goal.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Saldo saat ini: ${Formatters.formatRupiah(goal.currentAmount)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row {
                     FilterChip(
@@ -91,7 +104,29 @@ fun DepositWithdrawDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Quick Pills
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    quickPills.forEach { pill ->
+                        val isSelected = amountText == pill.toInt().toString()
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { amountText = pill.toInt().toString() },
+                            label = {
+                                Text(
+                                    text = Formatters.formatRupiah(pill),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
                     value = amountText,
@@ -115,7 +150,7 @@ fun DepositWithdrawDialog(
                     value = noteText,
                     onValueChange = { noteText = it },
                     label = { Text("Catatan Transaksi") },
-                    placeholder = { Text("Kebutuhan / Alasan penarikan") },
+                    placeholder = { Text("Contoh: Tabungan harian / Keperluan") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -131,22 +166,23 @@ fun DepositWithdrawDialog(
                         return@Button
                     }
                     if (selectedType == TransactionType.WITHDRAW && amount > goal.currentAmount) {
-                        errorMessage = "Saldo tidak mencukupi (maksimal ${Formatters.formatRupiah(goal.currentAmount)})"
+                        errorMessage = "Saldo tidak cukup (maksimal ${Formatters.formatRupiah(goal.currentAmount)})"
                         return@Button
                     }
                     onConfirm(amount, selectedType, noteText)
                 },
+                shape = RoundedCornerShape(12.dp),
                 colors = if (selectedType == TransactionType.WITHDRAW) {
                     ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 } else {
                     ButtonDefaults.buttonColors()
                 }
             ) {
-                Text(if (selectedType == TransactionType.DEPOSIT) "Setor Saldo" else "Tarik Saldo")
+                Text(if (selectedType == TransactionType.DEPOSIT) "Setor Saldo" else "Tarik Saldo", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) {
                 Text("Batal")
             }
         }

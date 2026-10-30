@@ -7,6 +7,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
+import android.util.SizeF
 import android.widget.RemoteViews
 import com.arbdev.angel.MainActivity
 import com.arbdev.angel.R
@@ -58,9 +60,7 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
                 val (currentStreak, _) = dbHelper.calculateStreakDays()
 
                 for (widgetId in appWidgetIds) {
-                    val views = RemoteViews(context.packageName, R.layout.widget_angel_savings)
-
-                    // Intent buka aplikasi saat klik area widget
+                    // PendingIntent Buka Aplikasi
                     val openAppIntent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     }
@@ -70,36 +70,8 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
                         openAppIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    views.setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent)
 
-                    // Bind Streak Status
-                    if (hasSavedToday) {
-                        views.setTextViewText(R.id.tv_widget_streak, "✓ Tercatat ($currentStreak Hari)")
-                        views.setTextColor(R.id.tv_widget_streak, Color.parseColor("#10B981"))
-                    } else {
-                        views.setTextViewText(R.id.tv_widget_streak, "Belum Nabung")
-                        views.setTextColor(R.id.tv_widget_streak, Color.parseColor("#F59E0B"))
-                    }
-
-                    // Bind Goal Info
-                    if (primaryGoal != null) {
-                        views.setTextViewText(R.id.tv_widget_goal_title, primaryGoal.title)
-                        views.setTextViewText(
-                            R.id.tv_widget_amount,
-                            "${Formatters.formatRupiah(primaryGoal.currentAmount)} / ${Formatters.formatRupiah(primaryGoal.targetAmount)} (${primaryGoal.progressPercentage}%)"
-                        )
-                        views.setProgressBar(R.id.pb_widget_progress, 100, primaryGoal.progressPercentage, false)
-
-                        val daysRemaining = primaryGoal.getEstimatedDaysRemaining(dailyTarget)
-                        views.setTextViewText(R.id.tv_widget_estimate, "Estimasi: ~$daysRemaining hari lagi")
-                    } else {
-                        views.setTextViewText(R.id.tv_widget_goal_title, "Belum Ada Target")
-                        views.setTextViewText(R.id.tv_widget_amount, "Rp 0")
-                        views.setProgressBar(R.id.pb_widget_progress, 100, 0, false)
-                        views.setTextViewText(R.id.tv_widget_estimate, "Buka aplikasi untuk membuat celengan")
-                    }
-
-                    // Bind 1-Tap Quick Action Button
+                    // PendingIntent 1-Tap Save
                     val saveIntent = Intent(context, AngelAppWidgetProvider::class.java).apply {
                         action = ACTION_WIDGET_QUICK_SAVE
                     }
@@ -109,15 +81,83 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
                         saveIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    views.setOnClickPendingIntent(R.id.btn_widget_save, savePendingIntent)
 
-                    if (hasSavedToday) {
-                        views.setTextViewText(R.id.btn_widget_save, "✓ Sudah Menabung Hari Ini")
-                    } else {
-                        views.setTextViewText(R.id.btn_widget_save, "⚡ Nabung ${Formatters.formatRupiah(dailyTarget)}")
+                    val saveBtnText = if (hasSavedToday) "✓ Sudah Nabung" else "⚡ Nabung ${Formatters.formatRupiah(dailyTarget)}"
+                    val streakText = if (hasSavedToday) "✓ $currentStreak Hari" else "Belum Nabung"
+                    val streakColor = if (hasSavedToday) Color.parseColor("#10B981") else Color.parseColor("#F59E0B")
+
+                    // 1. Small View (2x2)
+                    val smallViews = RemoteViews(context.packageName, R.layout.widget_angel_small).apply {
+                        setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent)
+                        setOnClickPendingIntent(R.id.btn_widget_save, savePendingIntent)
+                        setTextViewText(R.id.tv_widget_small_amount, if (primaryGoal != null) Formatters.formatRupiah(primaryGoal.currentAmount) else "Rp 0")
+                        setTextViewText(R.id.tv_widget_small_streak, streakText)
+                        setTextColor(R.id.tv_widget_small_streak, streakColor)
+                        setTextViewText(R.id.btn_widget_save, if (hasSavedToday) "✓ Selesai" else "⚡ +${(dailyTarget / 1000).toInt()}k")
                     }
 
-                    appWidgetManager.updateAppWidget(widgetId, views)
+                    // 2. Medium View (4x1 / 4x2)
+                    val mediumViews = RemoteViews(context.packageName, R.layout.widget_angel_medium).apply {
+                        setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent)
+                        setOnClickPendingIntent(R.id.btn_widget_save, savePendingIntent)
+                        setTextViewText(R.id.tv_widget_streak, streakText)
+                        setTextColor(R.id.tv_widget_streak, streakColor)
+                        setTextViewText(R.id.btn_widget_save, saveBtnText)
+
+                        if (primaryGoal != null) {
+                            setTextViewText(R.id.tv_widget_goal_title, primaryGoal.title)
+                            setTextViewText(
+                                R.id.tv_widget_amount,
+                                "${Formatters.formatRupiah(primaryGoal.currentAmount)} / ${Formatters.formatRupiah(primaryGoal.targetAmount)} (${primaryGoal.progressPercentage}%)"
+                            )
+                            setProgressBar(R.id.pb_widget_progress, 100, primaryGoal.progressPercentage, false)
+                            val days = primaryGoal.getEstimatedDaysRemaining(dailyTarget)
+                            setTextViewText(R.id.tv_widget_estimate, "Estimasi: ~$days hari lagi")
+                        } else {
+                            setTextViewText(R.id.tv_widget_goal_title, "Belum Ada Target")
+                            setTextViewText(R.id.tv_widget_amount, "Rp 0")
+                            setProgressBar(R.id.pb_widget_progress, 100, 0, false)
+                            setTextViewText(R.id.tv_widget_estimate, "Buka aplikasi untuk membuat target")
+                        }
+                    }
+
+                    // 3. Large View (4x3 / 4x4)
+                    val largeViews = RemoteViews(context.packageName, R.layout.widget_angel_large).apply {
+                        setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent)
+                        setOnClickPendingIntent(R.id.btn_widget_save, savePendingIntent)
+                        setTextViewText(R.id.tv_widget_streak, streakText)
+                        setTextColor(R.id.tv_widget_streak, streakColor)
+                        setTextViewText(R.id.btn_widget_save, saveBtnText)
+
+                        if (primaryGoal != null) {
+                            setTextViewText(R.id.tv_widget_goal_title, primaryGoal.title)
+                            setTextViewText(
+                                R.id.tv_widget_amount,
+                                "${Formatters.formatRupiah(primaryGoal.currentAmount)} / ${Formatters.formatRupiah(primaryGoal.targetAmount)} (${primaryGoal.progressPercentage}%)"
+                            )
+                            setProgressBar(R.id.pb_widget_progress, 100, primaryGoal.progressPercentage, false)
+                            val days = primaryGoal.getEstimatedDaysRemaining(dailyTarget)
+                            val completionDate = primaryGoal.getEstimatedCompletionDateMillis(dailyTarget)
+                            setTextViewText(R.id.tv_widget_estimate, "Estimasi: ~$days hari lagi (${Formatters.formatDate(completionDate)})")
+                        } else {
+                            setTextViewText(R.id.tv_widget_goal_title, "Belum Ada Target")
+                            setTextViewText(R.id.tv_widget_amount, "Rp 0")
+                            setProgressBar(R.id.pb_widget_progress, 100, 0, false)
+                            setTextViewText(R.id.tv_widget_estimate, "Mulai impian Anda sekarang")
+                        }
+                    }
+
+                    // Responsive RemoteViews untuk Android 12+ (API 31+) & Android 14 (API 34+)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val viewMapping = mapOf(
+                            SizeF(120f, 90f) to smallViews,
+                            SizeF(200f, 100f) to mediumViews,
+                            SizeF(240f, 200f) to largeViews
+                        )
+                        appWidgetManager.updateAppWidget(widgetId, RemoteViews(viewMapping))
+                    } else {
+                        appWidgetManager.updateAppWidget(widgetId, mediumViews)
+                    }
                 }
             } finally {
                 pendingResult.finish()
@@ -145,13 +185,8 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
                             TransactionType.DEPOSIT,
                             "Setoran Widget Homescreen"
                         )
-                        // Putar audio lonceng Angel
                         NotificationHelper.playChimeSound(context)
-
-                        // Sinkronkan data ke repository jika aplikasi sedang aktif
                         SavingsRepository.getInstance(context).refreshData()
-
-                        // Perbarui seluruh widget di homescreen
                         updateAllWidgets(context)
                     }
                 } finally {

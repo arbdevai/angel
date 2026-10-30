@@ -470,6 +470,7 @@ fun SettingsScreen(
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
+            shape = RoundedCornerShape(26.dp),
             title = { Text("Konfirmasi Hapus Data") },
             text = { Text("Seluruh data celengan dan riwayat transaksi akan dihapus secara permanen dari perangkat lokal. Lanjutkan?") },
             confirmButton = {
@@ -478,13 +479,14 @@ fun SettingsScreen(
                         onClearAllData()
                         showResetDialog = false
                     },
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Hapus Semuanya")
+                    Text("Hapus Semuanya", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showResetDialog = false }) {
+                OutlinedButton(onClick = { showResetDialog = false }, shape = RoundedCornerShape(12.dp)) {
                     Text("Batal")
                 }
             }
@@ -521,6 +523,7 @@ private fun TimePickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
         title = { Text("Pilih Jam Pengingat") },
         text = {
             Column {
@@ -583,6 +586,7 @@ private fun DailyTargetDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
         title = { Text("Target Tabungan Harian") },
         text = {
             Column {
@@ -627,6 +631,7 @@ private fun RestoreBackupDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
         title = { Text("Pulihkan Data dari JSON") },
         text = {
             Column {

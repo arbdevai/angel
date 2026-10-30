@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_container"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Small Compact Header -->
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="@string/app_name"
+        android:src="@mipmap/ic_launcher" />
+
+    <TextView
+        android:id="@+id/tv_widget_small_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="Rp 0"
+        android:textColor="#F8FAFC"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_widget_small_streak"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Belum Nabung"
+        android:textColor="#F59E0B"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <!-- 1-Tap Compact Button -->
+    <Button
+        android:id="@+id/btn_widget_save"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_widget_button"
+        android:text="⚡ +20k"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

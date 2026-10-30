@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -21,9 +22,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -38,9 +42,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arbdev.angel.data.model.Goal
+import com.arbdev.angel.data.model.GoalCategory
 import com.arbdev.angel.data.preferences.UserPreferencesManager
 import com.arbdev.angel.data.repository.SavingsRepository
 import com.arbdev.angel.ui.components.AngelCompactDock
@@ -53,6 +62,7 @@ import com.arbdev.angel.ui.screens.DashboardScreen
 import com.arbdev.angel.ui.screens.GoalsScreen
 import com.arbdev.angel.ui.screens.HistoryScreen
 import com.arbdev.angel.ui.screens.SettingsScreen
+import com.arbdev.angel.ui.screens.SimulatorScreen
 import com.arbdev.angel.ui.theme.AngelTheme
 import com.arbdev.angel.util.Formatters
 import com.arbdev.angel.widget.AngelAppWidgetProvider
@@ -67,7 +77,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Inisialisasi channel notifikasi
         NotificationHelper.createNotificationChannel(applicationContext)
 
         val repository = SavingsRepository.getInstance(applicationContext)
@@ -77,6 +86,7 @@ class MainActivity : ComponentActivity() {
             AngelTheme {
                 val coroutineScope = rememberCoroutineScope()
                 val snackbarHostState = remember { SnackbarHostState() }
+                val haptic = LocalHapticFeedback.current
 
                 // Collect state
                 val goals by repository.goals.collectAsStateWithLifecycle()
@@ -101,6 +111,11 @@ class MainActivity : ComponentActivity() {
                 var showCreateGoalDialog by remember { mutableStateOf(false) }
                 var goalToDelete by remember { mutableStateOf<Goal?>(null) }
 
+                // Prefilled data from Simulator
+                var prefillTitle by remember { mutableStateOf("") }
+                var prefillTargetAmount by remember { mutableStateOf(0.0) }
+                var prefillDays by remember { mutableStateOf(30) }
+
                 // Permission State (Android 13+)
                 var showRationaleDialog by remember { mutableStateOf(false) }
                 val permissionLauncher = rememberLauncherForActivityResult(
@@ -123,9 +138,7 @@ class MainActivity : ComponentActivity() {
                             showRationaleDialog = true
                         }
                     }
-                    // Jadwalkan WorkManager pengingat
                     ReminderScheduler.scheduleDailyReminder(applicationContext, reminderHour, reminderMinute)
-                    // Sinkronkan widget layar utama
                     AngelAppWidgetProvider.updateAllWidgets(applicationContext)
                 }
 
@@ -166,6 +179,7 @@ class MainActivity : ComponentActivity() {
                                         dailyTarget = dailyTarget,
                                         recentTransactions = transactions,
                                         onInstantDailySave = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             coroutineScope.launch {
                                                 val primaryGoal = goals.firstOrNull { !it.isCompleted } ?: goals.firstOrNull()
                                                 if (primaryGoal != null) {
@@ -190,10 +204,26 @@ class MainActivity : ComponentActivity() {
                                     GoalsScreen(
                                         goals = goals,
                                         dailyTarget = dailyTarget,
-                                        onCreateGoalClick = { showCreateGoalDialog = true },
+                                        onCreateGoalClick = {
+                                            prefillTitle = ""
+                                            prefillTargetAmount = 0.0
+                                            prefillDays = 30
+                                            showCreateGoalDialog = true
+                                        },
                                         onDepositWithdrawClick = { goal -> activeDepositGoal = goal },
                                         onEditGoalClick = { goal -> activeEditGoal = goal },
                                         onDeleteGoalClick = { goal -> goalToDelete = goal }
+                                    )
+                                }
+                                AngelTab.SIMULATOR -> {
+                                    SimulatorScreen(
+                                        currentDailyTarget = dailyTarget,
+                                        onCreateGoalFromMilestone = { title, targetAmount, _, days ->
+                                            prefillTitle = title
+                                            prefillTargetAmount = targetAmount
+                                            prefillDays = days
+                                            showCreateGoalDialog = true
+                                        }
                                     )
                                 }
                                 AngelTab.HISTORY -> {
@@ -258,7 +288,16 @@ class MainActivity : ComponentActivity() {
                                                 val json = repository.exportBackupJson()
                                                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                                 clipboard.setPrimaryClip(ClipData.newPlainText("Angel Backup", json))
-                                                snackbarHostState.showSnackbar("Data cadangan JSON berhasil disalin ke papan klip.")
+
+                                                // Share Sheet ramah pengguna awam
+                                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                    type = "text/plain"
+                                                    putExtra(Intent.EXTRA_SUBJECT, "Cadangan Data Celengan Angel")
+                                                    putExtra(Intent.EXTRA_TEXT, json)
+                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                }
+                                                startActivity(Intent.createChooser(shareIntent, "Bagikan Cadangan Celengan"))
+                                                snackbarHostState.showSnackbar("Data cadangan berhasil disalin dan siap dibagikan.")
                                             }
                                         },
                                         onRestoreBackup = { jsonStr ->
@@ -289,13 +328,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Quick Save Bottom Sheet (Opsional jika ingin nominal kustom)
+                // Quick Save Bottom Sheet (Nominal Kustom)
                 if (showQuickSaveSheet) {
                     QuickSaveSheet(
                         sheetState = quickSaveSheetState,
                         goals = goals,
                         onDismiss = { showQuickSaveSheet = false },
                         onConfirmSave = { goalId, amount, note ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             coroutineScope.launch {
                                 val ok = repository.saveMoney(goalId, amount, note)
                                 showQuickSaveSheet = false
@@ -315,6 +355,7 @@ class MainActivity : ComponentActivity() {
                         goal = goal,
                         onDismiss = { activeDepositGoal = null },
                         onConfirm = { amount, type, note ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             coroutineScope.launch {
                                 val ok = if (type == com.arbdev.angel.data.model.TransactionType.DEPOSIT) {
                                     repository.saveMoney(goal.id, amount, note)
@@ -338,9 +379,14 @@ class MainActivity : ComponentActivity() {
                 if (showCreateGoalDialog || activeEditGoal != null) {
                     CreateGoalDialog(
                         initialGoal = activeEditGoal,
+                        prefilledTitle = prefillTitle,
+                        prefilledTargetAmount = prefillTargetAmount,
+                        prefilledDays = prefillDays,
                         onDismiss = {
                             showCreateGoalDialog = false
                             activeEditGoal = null
+                            prefillTitle = ""
+                            prefillTargetAmount = 0.0
                         },
                         onConfirm = { title, targetAmount, category, daysToTarget, note ->
                             coroutineScope.launch {
@@ -370,6 +416,8 @@ class MainActivity : ComponentActivity() {
                                 AngelAppWidgetProvider.updateAllWidgets(applicationContext)
                                 showCreateGoalDialog = false
                                 activeEditGoal = null
+                                prefillTitle = ""
+                                prefillTargetAmount = 0.0
                             }
                         }
                     )
@@ -379,8 +427,9 @@ class MainActivity : ComponentActivity() {
                 goalToDelete?.let { goal ->
                     AlertDialog(
                         onDismissRequest = { goalToDelete = null },
+                        shape = RoundedCornerShape(26.dp),
                         title = { Text("Hapus Celengan") },
-                        text = { Text("Hapus target '${goal.title}'? Riwayat transaksi celengan ini juga akan dihapus.") },
+                        text = { Text("Hapus target '${goal.title}'? Seluruh riwayat transaksi celengan ini juga akan dihapus.") },
                         confirmButton = {
                             Button(
                                 onClick = {
@@ -390,13 +439,15 @@ class MainActivity : ComponentActivity() {
                                         AngelAppWidgetProvider.updateAllWidgets(applicationContext)
                                         snackbarHostState.showSnackbar("Celengan berhasil dihapus.")
                                     }
-                                }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Text("Hapus")
+                                Text("Hapus", fontWeight = FontWeight.Bold)
                             }
                         },
                         dismissButton = {
-                            OutlinedButton(onClick = { goalToDelete = null }) {
+                            OutlinedButton(onClick = { goalToDelete = null }, shape = RoundedCornerShape(12.dp)) {
                                 Text("Batal")
                             }
                         }

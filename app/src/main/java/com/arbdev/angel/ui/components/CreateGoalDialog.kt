@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,9 @@ import com.arbdev.angel.data.model.GoalCategory
 @Composable
 fun CreateGoalDialog(
     initialGoal: Goal? = null,
+    prefilledTitle: String = "",
+    prefilledTargetAmount: Double = 0.0,
+    prefilledDays: Int = 30,
     onDismiss: () -> Unit,
     onConfirm: (
         title: String,
@@ -53,18 +57,33 @@ fun CreateGoalDialog(
         note: String
     ) -> Unit
 ) {
-    var title by remember { mutableStateOf(initialGoal?.title ?: "") }
-    var targetAmountText by remember { mutableStateOf(initialGoal?.targetAmount?.toInt()?.toString() ?: "1000000") }
+    var title by remember {
+        mutableStateOf(
+            initialGoal?.title ?: prefilledTitle.ifBlank { "" }
+        )
+    }
+    var targetAmountText by remember {
+        mutableStateOf(
+            if (initialGoal != null) {
+                initialGoal.targetAmount.toInt().toString()
+            } else if (prefilledTargetAmount > 0.0) {
+                prefilledTargetAmount.toInt().toString()
+            } else {
+                "1000000"
+            }
+        )
+    }
     var selectedCategory by remember { mutableStateOf(initialGoal?.category ?: GoalCategory.GENERAL) }
-    var daysText by remember { mutableStateOf("30") }
+    var daysText by remember { mutableStateOf(if (prefilledDays > 0) prefilledDays.toString() else "30") }
     var note by remember { mutableStateOf(initialGoal?.note ?: "") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
         title = {
             Text(
-                text = if (initialGoal == null) "Buat Celengan Impian" else "Ubah Celengan",
+                text = if (initialGoal == null) "Target Celengan Baru" else "Ubah Target Celengan",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -134,13 +153,13 @@ fun CreateGoalDialog(
                                     modifier = Modifier
                                         .size(10.dp)
                                         .clip(CircleShape)
-                                        .background(if (isSelected) androidx.compose.ui.graphics.Color.White else cat.color)
+                                        .background(if (isSelected) Color.White else cat.color)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = cat.displayName,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (isSelected) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurface,
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -166,8 +185,8 @@ fun CreateGoalDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Catatan / Motivasi Target") },
-                    placeholder = { Text("Motivasi Anda menabung...") },
+                    label = { Text("Catatan Motivasi (Opsional)") },
+                    placeholder = { Text("Alasan atau tujuan menabung...") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -188,13 +207,14 @@ fun CreateGoalDialog(
                         return@Button
                     }
                     onConfirm(title.trim(), target, selectedCategory, days, note.trim())
-                }
+                },
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(if (initialGoal == null) "Simpan Target" else "Simpan Perubahan")
+                Text(if (initialGoal == null) "Simpan Target" else "Simpan Perubahan", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) {
                 Text("Batal")
             }
         }

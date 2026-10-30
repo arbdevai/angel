@@ -19,11 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Savings
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,7 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,8 +44,17 @@ fun AngelCompactDock(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.85f),
+                        MaterialTheme.colorScheme.background
+                    )
+                )
+            )
             .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
@@ -70,7 +75,7 @@ fun AngelCompactDock(
                     val isSelected = currentTab == tab
                     val iconColor by animateColorAsState(
                         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        animationSpec = tween(durationMillis = 200),
+                        animationSpec = tween(durationMillis = 180),
                         label = "iconColor"
                     )
 
@@ -90,16 +95,17 @@ fun AngelCompactDock(
                             imageVector = tab.icon,
                             contentDescription = tab.title,
                             tint = iconColor,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(21.dp)
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
                             text = tab.title,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = iconColor
+                            color = iconColor,
+                            maxLines = 1
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
@@ -107,10 +113,10 @@ fun AngelCompactDock(
                         // Micro dot indicator
                         Box(
                             modifier = Modifier
-                                .size(4.dp)
+                                .size(3.5.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent
+                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
                                 )
                         )
                     }
