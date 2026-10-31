@@ -1,7 +1,10 @@
 package com.arbdev.angel.util
 
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -12,14 +15,14 @@ object Formatters {
         maximumFractionDigits = 0
     }
 
-    private val dateOnlyFormat = SimpleDateFormat("dd MMM yyyy", idLocale)
-    private val dateTimeFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", idLocale)
-    private val dayNameFormat = SimpleDateFormat("EEE", idLocale)
+    private val dateOnlyFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", idLocale)
+    private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", idLocale)
+    private val dayNameFormatter = DateTimeFormatter.ofPattern("EEE", idLocale)
 
+    @Synchronized
     fun formatRupiah(amount: Double): String {
         return try {
             val formatted = currencyFormat.format(amount)
-            // Replace "Rp" with "Rp " for standard spacing
             if (formatted.startsWith("Rp") && !formatted.startsWith("Rp ")) {
                 formatted.replaceFirst("Rp", "Rp ")
             } else {
@@ -32,15 +35,33 @@ object Formatters {
 
     fun formatDate(millis: Long): String {
         if (millis <= 0L) return "-"
-        return dateOnlyFormat.format(Date(millis))
+        return try {
+            val instant = Instant.ofEpochMilli(millis)
+            val zonedDateTime = instant.atZone(ZoneId.systemDefault())
+            zonedDateTime.format(dateOnlyFormatter)
+        } catch (_: Exception) {
+            "-"
+        }
     }
 
     fun formatDateTime(millis: Long): String {
         if (millis <= 0L) return "-"
-        return dateTimeFormat.format(Date(millis))
+        return try {
+            val instant = Instant.ofEpochMilli(millis)
+            val zonedDateTime = instant.atZone(ZoneId.systemDefault())
+            zonedDateTime.format(dateTimeFormatter)
+        } catch (_: Exception) {
+            "-"
+        }
     }
 
     fun getDayName(date: Date): String {
-        return dayNameFormat.format(date)
+        return try {
+            val instant = date.toInstant()
+            val zonedDateTime = instant.atZone(ZoneId.systemDefault())
+            zonedDateTime.format(dayNameFormatter)
+        } catch (_: Exception) {
+            "-"
+        }
     }
 }

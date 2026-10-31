@@ -76,7 +76,7 @@ fun DashboardScreen(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 96.dp)
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         // App Header Title
         item {

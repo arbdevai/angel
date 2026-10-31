@@ -56,6 +56,7 @@ import com.arbdev.angel.ui.components.AngelCompactDock
 import com.arbdev.angel.ui.components.AngelTab
 import com.arbdev.angel.ui.components.CreateGoalDialog
 import com.arbdev.angel.ui.components.DepositWithdrawDialog
+import com.arbdev.angel.ui.components.InAppUpdateDialog
 import com.arbdev.angel.ui.components.NotificationRationaleDialog
 import com.arbdev.angel.ui.components.QuickSaveSheet
 import com.arbdev.angel.ui.screens.DashboardScreen
@@ -65,6 +66,7 @@ import com.arbdev.angel.ui.screens.SettingsScreen
 import com.arbdev.angel.ui.screens.SimulatorScreen
 import com.arbdev.angel.ui.theme.AngelTheme
 import com.arbdev.angel.util.Formatters
+import com.arbdev.angel.util.UpdateManager
 import com.arbdev.angel.widget.AngelAppWidgetProvider
 import com.arbdev.angel.worker.NotificationHelper
 import com.arbdev.angel.worker.ReminderScheduler
@@ -88,11 +90,16 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 val haptic = LocalHapticFeedback.current
 
+                val repository = SavingsRepository.getInstance(applicationContext)
+                val prefs = UserPreferencesManager(applicationContext)
+                val updateManager = remember { UpdateManager(applicationContext) }
+
                 // Collect state
                 val goals by repository.goals.collectAsStateWithLifecycle()
                 val transactions by repository.transactions.collectAsStateWithLifecycle()
                 val streakInfo by repository.streakInfo.collectAsStateWithLifecycle()
                 val stats by repository.stats.collectAsStateWithLifecycle()
+                val updateState by updateManager.updateState.collectAsStateWithLifecycle()
 
                 val isReminderEnabled by prefs.isDailyReminderEnabled.collectAsStateWithLifecycle(initialValue = true)
                 val reminderHour by prefs.reminderHour.collectAsStateWithLifecycle(initialValue = 20)
@@ -138,8 +145,14 @@ class MainActivity : ComponentActivity() {
                             showRationaleDialog = true
                         }
                     }
-                    ReminderScheduler.scheduleDailyReminder(applicationContext, reminderHour, reminderMinute)
+                    ReminderScheduler.scheduleDailyReminder(
+                        applicationContext,
+                        reminderHour,
+                        reminderMinute,
+                        androidx.work.ExistingPeriodicWorkPolicy.KEEP
+                    )
                     AngelAppWidgetProvider.updateAllWidgets(applicationContext)
+                    updateManager.checkForUpdates()
                 }
 
                 Scaffold(
@@ -257,7 +270,12 @@ class MainActivity : ComponentActivity() {
                                         onChangeReminderTime = { h, m ->
                                             coroutineScope.launch {
                                                 prefs.setReminderTime(h, m)
-                                                ReminderScheduler.scheduleDailyReminder(applicationContext, h, m)
+                                                ReminderScheduler.scheduleDailyReminder(
+                                                    applicationContext,
+                                                    h,
+                                                    m,
+                                                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE
+                                                )
                                                 snackbarHostState.showSnackbar(
                                                     String.format("Waktu pengingat disimpan: %02d:%02d WIB", h, m)
                                                 )
@@ -320,6 +338,9 @@ class MainActivity : ComponentActivity() {
                                                 AngelAppWidgetProvider.updateAllWidgets(applicationContext)
                                                 snackbarHostState.showSnackbar("Seluruh data berhasil dihapus.")
                                             }
+                                        },
+                                        onCheckUpdateClick = {
+                                            updateManager.checkForUpdates()
                                         }
                                     )
                                 }
@@ -334,6 +355,7 @@ class MainActivity : ComponentActivity() {
                         sheetState = quickSaveSheetState,
                         goals = goals,
                         onDismiss = { showQuickSaveSheet = false },
+                        onCreateGoalClick = { showCreateGoalDialog = true },
                         onConfirmSave = { goalId, amount, note ->
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             coroutineScope.launch {
@@ -341,7 +363,6 @@ class MainActivity : ComponentActivity() {
                                 showQuickSaveSheet = false
                                 if (ok) {
                                     NotificationHelper.playChimeSound(applicationContext)
-                                    AngelAppWidgetProvider.updateAllWidgets(applicationContext)
                                     snackbarHostState.showSnackbar("Setoran tabungan berhasil dicatat.")
                                 }
                             }
@@ -463,6 +484,20 @@ class MainActivity : ComponentActivity() {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
+                        }
+                    )
+                }
+
+                // In-App Update Dialog (GitHub Releases Self-Updater)
+                if (updateState !is com.arbdev.angel.data.model.UpdateState.Idle) {
+                    InAppUpdateDialog(
+                        state = updateState,
+                        onDismiss = { updateManager.resetState() },
+                        onStartDownload = { url, version ->
+                            updateManager.startDownload(url, version)
+                        },
+                        onInstallApk = { apkPath ->
+                            updateManager.installApk(apkPath)
                         }
                     )
                 }

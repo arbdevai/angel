@@ -32,14 +32,17 @@ data class Goal(
     val remainingAmount: Double
         get() = (targetAmount - currentAmount).coerceAtLeast(0.0)
 
-    fun getEstimatedDaysRemaining(dailyTarget: Double): Int {
-        if (isCompleted || remainingAmount <= 0.0) return 0
+    fun getEstimatedDaysRemaining(dailyTarget: Double): Long {
+        if (isCompleted || remainingAmount <= 0.0) return 0L
         val target = if (dailyTarget > 0.0) dailyTarget else 20000.0
-        return ceil(remainingAmount / target).toInt().coerceAtLeast(1)
+        val days = ceil(remainingAmount / target).toLong()
+        return days.coerceIn(1L, 36500L) // Maksimal batas wajar 100 tahun
     }
 
     fun getEstimatedCompletionDateMillis(dailyTarget: Double): Long {
         val days = getEstimatedDaysRemaining(dailyTarget)
-        return System.currentTimeMillis() + (days.toLong() * 24L * 60L * 60L * 1000L)
+        val millis = days * 24L * 60L * 60L * 1000L
+        val now = System.currentTimeMillis()
+        return if (Long.MAX_VALUE - now > millis) now + millis else Long.MAX_VALUE
     }
 }

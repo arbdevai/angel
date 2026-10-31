@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.TrackChanges
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,7 +68,8 @@ fun SettingsScreen(
     onSendTestNotification: () -> Unit,
     onExportBackup: () -> Unit,
     onRestoreBackup: (String) -> Unit,
-    onClearAllData: () -> Unit
+    onClearAllData: () -> Unit,
+    onCheckUpdateClick: () -> Unit = {}
 ) {
     var showTimeDialog by remember { mutableStateOf(false) }
     var showTargetDialog by remember { mutableStateOf(false) }
@@ -392,7 +394,7 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Tentang Aplikasi & Widget
+        // Section: Tentang Aplikasi & Pembaruan
         item {
             Spacer(modifier = Modifier.height(20.dp))
             Card(
@@ -401,28 +403,47 @@ fun SettingsScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SettingIcon(Icons.Rounded.Info)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Angel - Celengan Digital",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Versi 1.1.0 • Android 14 Widget Ready",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SettingIcon(Icons.Rounded.Info)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Angel - Celengan Digital",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Versi 1.3.0 • Produksi Standar Google",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
+
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "100% offline-first dengan basis data SQLite lokal, WorkManager hemat daya untuk pengingat harian, widget layar utama Android 14 interaktif dengan tombol 1-klik, dan audio notifikasi MP3 kustom.",
+                        text = "100% offline-first dengan basis data SQLite lokal, WorkManager hemat daya untuk pengingat harian, widget layar utama Android 14 interaktif dengan tombol 1-klik, audio notifikasi MP3 kustom, dan sistem pembaruan mandiri in-app update.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedButton(
+                        onClick = onCheckUpdateClick,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Rounded.SystemUpdate, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Periksa Pembaruan Aplikasi", fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 

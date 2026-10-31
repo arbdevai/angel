@@ -9,9 +9,12 @@ import com.arbdev.angel.data.model.Goal
 import com.arbdev.angel.data.model.GoalCategory
 import com.arbdev.angel.data.model.TransactionRecord
 import com.arbdev.angel.data.model.TransactionType
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
+import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.UUID
 
@@ -50,11 +53,11 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         const val COL_LOG_TOTAL_SAVED = "total_saved"
         const val COL_LOG_TX_COUNT = "tx_count"
 
-        private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        private val monthFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US)
+        private val monthFormat = DateTimeFormatter.ofPattern("yyyy-MM", Locale.US)
 
-        fun getTodayDateString(): String = dateFormat.format(Date())
-        fun getCurrentMonthString(): String = monthFormat.format(Date())
+        fun getTodayDateString(): String = LocalDate.now().format(dateFormat)
+        fun getCurrentMonthString(): String = YearMonth.now().format(monthFormat)
     }
 
     override fun onConfigure(db: SQLiteDatabase) {
@@ -218,11 +221,30 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     }
 
     // --- Transactions & Savings ---
-    fun addTransaction(goalId: String, amount: Double, type: TransactionType, note: String): Boolean {
+    fun addTransaction(
+        goalId: String,
+        amount: Double,
+        type: TransactionType,
+        note: String,
+        timestamp: Long = System.currentTimeMillis()
+    ): Boolean {
         val db = writableDatabase
         db.beginTransaction()
         try {
-            val goal = getGoalById(goalId) ?: return false
+            // Read goal inside transaction for strict atomicity
+            val cursor = db.query(
+                TABLE_GOALS,
+                null,
+                "$COL_GOAL_ID = ?",
+                arrayOf(goalId),
+                null,
+                null,
+                null
+            )
+            val goal = cursor.use {
+                if (it.moveToNext()) cursorToGoal(it) else null
+            } ?: return false
+
             val newAmount = when (type) {
                 TransactionType.DEPOSIT -> goal.currentAmount + amount
                 TransactionType.WITHDRAW -> (goal.currentAmount - amount).coerceAtLeast(0.0)
@@ -239,14 +261,13 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
 
             // 2. Insert transaction record
             val txId = UUID.randomUUID().toString()
-            val now = System.currentTimeMillis()
             val txValues = ContentValues().apply {
                 put(COL_TX_ID, txId)
                 put(COL_TX_GOAL_ID, goalId)
                 put(COL_TX_GOAL_TITLE, goal.title)
                 put(COL_TX_AMOUNT, amount)
                 put(COL_TX_TYPE, type.name)
-                put(COL_TX_TIMESTAMP, now)
+                put(COL_TX_TIMESTAMP, timestamp)
                 put(COL_TX_NOTE, note)
             }
             val insertedTx = db.insert(TABLE_TRANSACTIONS, null, txValues)
@@ -254,12 +275,16 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
 
             // 3. Update daily savings log if it's a deposit
             if (type == TransactionType.DEPOSIT) {
-                val todayStr = dateFormat.format(Date(now))
+                val dateStr = Instant.ofEpochMilli(timestamp)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .format(dateFormat)
+
                 val logCursor = db.query(
                     TABLE_DAILY_LOG,
                     null,
                     "$COL_LOG_DATE = ?",
-                    arrayOf(todayStr),
+                    arrayOf(dateStr),
                     null,
                     null,
                     null
@@ -268,11 +293,11 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
                 if (exists) {
                     db.execSQL(
                         "UPDATE $TABLE_DAILY_LOG SET $COL_LOG_TOTAL_SAVED = $COL_LOG_TOTAL_SAVED + ?, $COL_LOG_TX_COUNT = $COL_LOG_TX_COUNT + 1 WHERE $COL_LOG_DATE = ?",
-                        arrayOf(amount, todayStr)
+                        arrayOf(amount, dateStr)
                     )
                 } else {
                     val logValues = ContentValues().apply {
-                        put(COL_LOG_DATE, todayStr)
+                        put(COL_LOG_DATE, dateStr)
                         put(COL_LOG_TOTAL_SAVED, amount)
                         put(COL_LOG_TX_COUNT, 1)
                     }
@@ -375,7 +400,6 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     }
 
     fun calculateStreakDays(): Pair<Int, Int> {
-        // Returns Pair(currentStreak, longestStreak)
         val db = readableDatabase
         val cursor = db.query(
             TABLE_DAILY_LOG,
@@ -396,32 +420,24 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
 
         if (dates.isEmpty()) return Pair(0, 0)
 
-        val cal = Calendar.getInstance()
-        val todayStr = dateFormat.format(cal.time)
-        cal.add(Calendar.DAY_OF_YEAR, -1)
-        val yesterdayStr = dateFormat.format(cal.time)
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        val todayStr = today.format(dateFormat)
+        val yesterdayStr = yesterday.format(dateFormat)
 
-        var currentStreak = 0
         val dateSet = dates.toSet()
-
-        var checkCal = Calendar.getInstance()
-        // If saved today, count backwards from today; if not saved today, count backwards from yesterday
-        if (dateSet.contains(todayStr)) {
-            checkCal.time = Date()
+        var checkDate = if (dateSet.contains(todayStr)) {
+            today
         } else if (dateSet.contains(yesterdayStr)) {
-            checkCal.time = cal.time
+            yesterday
         } else {
             return Pair(0, calculateLongestStreak(dates))
         }
 
-        while (true) {
-            val dStr = dateFormat.format(checkCal.time)
-            if (dateSet.contains(dStr)) {
-                currentStreak++
-                checkCal.add(Calendar.DAY_OF_YEAR, -1)
-            } else {
-                break
-            }
+        var currentStreak = 0
+        while (dateSet.contains(checkDate.format(dateFormat))) {
+            currentStreak++
+            checkDate = checkDate.minusDays(1)
         }
 
         return Pair(currentStreak, maxOf(currentStreak, calculateLongestStreak(dates)))
@@ -432,18 +448,20 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
         var maxStreak = 1
         var tempStreak = 1
 
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val sortedAsc = datesDesc.mapNotNull {
-            try { sdf.parse(it) } catch (_: Exception) { null }
+            try {
+                LocalDate.parse(it, dateFormat)
+            } catch (_: Exception) {
+                null
+            }
         }.sorted()
 
         for (i in 0 until sortedAsc.size - 1) {
-            val diffMillis = sortedAsc[i + 1].time - sortedAsc[i].time
-            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-            if (diffDays == 1) {
+            val daysBetween = ChronoUnit.DAYS.between(sortedAsc[i], sortedAsc[i + 1])
+            if (daysBetween == 1L) {
                 tempStreak++
                 if (tempStreak > maxStreak) maxStreak = tempStreak
-            } else if (diffDays > 1) {
+            } else if (daysBetween > 1L) {
                 tempStreak = 1
             }
         }
@@ -453,11 +471,10 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
     fun getRecent7DaysSaved(): List<Boolean> {
         val result = mutableListOf<Boolean>()
         val db = readableDatabase
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_YEAR, -6) // 6 days ago up to today = 7 days
+        var current = LocalDate.now().minusDays(6)
 
         for (i in 0..6) {
-            val dStr = dateFormat.format(cal.time)
+            val dStr = current.format(dateFormat)
             val cursor = db.query(
                 TABLE_DAILY_LOG,
                 arrayOf(COL_LOG_TOTAL_SAVED),
@@ -469,7 +486,7 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
             )
             val saved = cursor.use { it.moveToFirst() }
             result.add(saved)
-            cal.add(Calendar.DAY_OF_YEAR, 1)
+            current = current.plusDays(1)
         }
         return result
     }
@@ -500,6 +517,84 @@ class AngelDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE
             }
         }
         return Pair(deposit, withdraw)
+    }
+
+    fun restoreData(goals: List<Goal>, transactions: List<TransactionRecord>): Boolean {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete(TABLE_TRANSACTIONS, null, null)
+            db.delete(TABLE_DAILY_LOG, null, null)
+            db.delete(TABLE_GOALS, null, null)
+
+            // 1. Pulihkan seluruh celengan dengan saldo asli
+            for (goal in goals) {
+                val values = ContentValues().apply {
+                    put(COL_GOAL_ID, goal.id)
+                    put(COL_GOAL_TITLE, goal.title)
+                    put(COL_GOAL_TARGET_AMOUNT, goal.targetAmount)
+                    put(COL_GOAL_CURRENT_AMOUNT, goal.currentAmount)
+                    put(COL_GOAL_CATEGORY, goal.categoryName)
+                    put(COL_GOAL_TARGET_DATE, goal.targetDateMillis)
+                    put(COL_GOAL_CREATED_AT, goal.createdAtMillis)
+                    put(COL_GOAL_COLOR_HEX, goal.colorHex)
+                    put(COL_GOAL_IS_COMPLETED, if (goal.isCompleted) 1 else 0)
+                    put(COL_GOAL_NOTE, goal.note)
+                }
+                db.insert(TABLE_GOALS, null, values)
+            }
+
+            // 2. Pulihkan seluruh riwayat transaksi dengan timestamp asli tanpa menambah saldo lagi
+            for (tx in transactions) {
+                val txValues = ContentValues().apply {
+                    put(COL_TX_ID, tx.id)
+                    put(COL_TX_GOAL_ID, tx.goalId)
+                    put(COL_TX_GOAL_TITLE, tx.goalTitle)
+                    put(COL_TX_AMOUNT, tx.amount)
+                    put(COL_TX_TYPE, tx.type.name)
+                    put(COL_TX_TIMESTAMP, tx.timestamp)
+                    put(COL_TX_NOTE, tx.note)
+                }
+                db.insert(TABLE_TRANSACTIONS, null, txValues)
+
+                // 3. Bangun ulang log harian sesuai tanggal transaksi asli
+                if (tx.type == TransactionType.DEPOSIT) {
+                    val dateStr = Instant.ofEpochMilli(tx.timestamp)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                        .format(dateFormat)
+
+                    val logCursor = db.query(
+                        TABLE_DAILY_LOG,
+                        null,
+                        "$COL_LOG_DATE = ?",
+                        arrayOf(dateStr),
+                        null,
+                        null,
+                        null
+                    )
+                    val exists = logCursor.use { it.moveToFirst() }
+                    if (exists) {
+                        db.execSQL(
+                            "UPDATE $TABLE_DAILY_LOG SET $COL_LOG_TOTAL_SAVED = $COL_LOG_TOTAL_SAVED + ?, $COL_LOG_TX_COUNT = $COL_LOG_TX_COUNT + 1 WHERE $COL_LOG_DATE = ?",
+                            arrayOf(tx.amount, dateStr)
+                        )
+                    } else {
+                        val logValues = ContentValues().apply {
+                            put(COL_LOG_DATE, dateStr)
+                            put(COL_LOG_TOTAL_SAVED, tx.amount)
+                            put(COL_LOG_TX_COUNT, 1)
+                        }
+                        db.insert(TABLE_DAILY_LOG, null, logValues)
+                    }
+                }
+            }
+
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
     }
 
     fun clearAllData() {

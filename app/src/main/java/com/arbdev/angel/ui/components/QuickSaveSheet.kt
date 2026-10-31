@@ -28,6 +28,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
@@ -40,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -53,9 +53,10 @@ fun QuickSaveSheet(
     sheetState: SheetState,
     goals: List<Goal>,
     onDismiss: () -> Unit,
-    onConfirmSave: (goalId: String, amount: Double, note: String) -> Unit
+    onConfirmSave: (goalId: String, amount: Double, note: String) -> Unit,
+    onCreateGoalClick: () -> Unit = {}
 ) {
-    var selectedGoalId by remember { mutableStateOf(goals.firstOrNull()?.id ?: "") }
+    var selectedGoalId by remember(goals) { mutableStateOf(goals.firstOrNull()?.id ?: "") }
     var amountText by remember { mutableStateOf("20000") }
     var noteText by remember { mutableStateOf("Tabungan harian Angel") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -107,8 +108,42 @@ fun QuickSaveSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Pilih Celengan Target
-            if (goals.isNotEmpty()) {
+            if (goals.isEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Belum Ada Celengan Aktif",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Buat target celengan terlebih dahulu untuk mulai menabung.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = {
+                                onDismiss()
+                                onCreateGoalClick()
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Buat Celengan Sekarang")
+                        }
+                    }
+                }
+            } else {
                 Text(
                     text = "Pilih Celengan Tujuan:",
                     style = MaterialTheme.typography.labelLarge,
@@ -124,8 +159,7 @@ fun QuickSaveSheet(
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { selectedGoalId = goal.id },
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            border = if (isSelected) null else null
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -158,98 +192,100 @@ fun QuickSaveSheet(
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-            }
 
-            // Quick Nominal Buttons
-            Text(
-                text = "Pilihan Nominal Cepat:",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                quickPills.forEach { pill ->
-                    val isSelected = amountText == pill.toInt().toString()
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { amountText = pill.toInt().toString() },
-                        label = {
-                            Text(
-                                text = Formatters.formatRupiah(pill),
-                                style = MaterialTheme.typography.labelSmall
+                // Quick Nominal Buttons
+                Text(
+                    text = "Pilihan Nominal Cepat:",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    quickPills.forEach { pill ->
+                        val isSelected = amountText == pill.toInt().toString()
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { amountText = pill.toInt().toString() },
+                            label = {
+                                Text(
+                                    text = Formatters.formatRupiah(pill),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Input Nominal
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = {
+                        amountText = it.filter { char -> char.isDigit() }
+                        errorMessage = null
+                    },
+                    label = { Text("Nominal Setoran (Rp)") },
+                    placeholder = { Text("Contoh: 20000") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    isError = errorMessage != null,
+                    supportingText = errorMessage?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Catatan
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    label = { Text("Catatan Tabungan (Opsional)") },
+                    placeholder = { Text("Contoh: Tabungan harian / Uang kembalian") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        val amount = amountText.toDoubleOrNull() ?: 0.0
+                        if (amount <= 0.0) {
+                            errorMessage = "Masukkan nominal setoran yang valid"
+                            return@Button
+                        }
+                        if (selectedGoalId.isBlank() && goals.isNotEmpty()) {
+                            selectedGoalId = goals.first().id
+                        }
+                        if (selectedGoalId.isNotBlank()) {
+                            onConfirmSave(selectedGoalId, amount, noteText)
+                        } else {
+                            errorMessage = "Pilih celengan tujuan terlebih dahulu"
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Simpan ke Celengan",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Input Nominal
-            OutlinedTextField(
-                value = amountText,
-                onValueChange = {
-                    amountText = it.filter { char -> char.isDigit() }
-                    errorMessage = null
-                },
-                label = { Text("Nominal Setoran (Rp)") },
-                placeholder = { Text("Contoh: 20000") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                isError = errorMessage != null,
-                supportingText = errorMessage?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Catatan
-            OutlinedTextField(
-                value = noteText,
-                onValueChange = { noteText = it },
-                label = { Text("Catatan Tabungan (Opsional)") },
-                placeholder = { Text("Contoh: Tabungan harian / Uang kembalian") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    val amount = amountText.toDoubleOrNull() ?: 0.0
-                    if (amount <= 0.0) {
-                        errorMessage = "Masukkan nominal setoran yang valid"
-                        return@Button
-                    }
-                    if (selectedGoalId.isBlank() && goals.isNotEmpty()) {
-                        selectedGoalId = goals.first().id
-                    }
-                    if (selectedGoalId.isNotBlank()) {
-                        onConfirmSave(selectedGoalId, amount, noteText)
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Simpan ke Celengan",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
             }
         }
     }

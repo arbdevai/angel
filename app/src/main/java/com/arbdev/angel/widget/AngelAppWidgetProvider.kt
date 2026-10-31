@@ -13,8 +13,6 @@ import android.widget.RemoteViews
 import com.arbdev.angel.MainActivity
 import com.arbdev.angel.R
 import com.arbdev.angel.data.local.AngelDatabaseHelper
-import com.arbdev.angel.data.model.Goal
-import com.arbdev.angel.data.model.TransactionType
 import com.arbdev.angel.data.preferences.UserPreferencesManager
 import com.arbdev.angel.data.repository.SavingsRepository
 import com.arbdev.angel.util.Formatters
@@ -171,23 +169,22 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
             val pendingResult = goAsync()
             scope.launch {
                 try {
-                    val dbHelper = AngelDatabaseHelper(context)
+                    val repository = SavingsRepository.getInstance(context)
                     val prefs = UserPreferencesManager(context)
                     val dailyTarget = prefs.dailySavingTarget.first()
 
-                    val goals = dbHelper.getAllGoals()
+                    val goals = repository.goals.value
                     val targetGoal = goals.firstOrNull { !it.isCompleted } ?: goals.firstOrNull()
 
                     if (targetGoal != null && dailyTarget > 0.0) {
-                        dbHelper.addTransaction(
+                        val success = repository.saveMoney(
                             targetGoal.id,
                             dailyTarget,
-                            TransactionType.DEPOSIT,
                             "Setoran Widget Homescreen"
                         )
-                        NotificationHelper.playChimeSound(context)
-                        SavingsRepository.getInstance(context).refreshData()
-                        updateAllWidgets(context)
+                        if (success) {
+                            NotificationHelper.playChimeSound(context)
+                        }
                     }
                 } finally {
                     pendingResult.finish()

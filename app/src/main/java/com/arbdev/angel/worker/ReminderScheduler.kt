@@ -11,7 +11,12 @@ object ReminderScheduler {
 
     private const val WORK_NAME = "angel_daily_reminder_work"
 
-    fun scheduleDailyReminder(context: Context, hour: Int = 20, minute: Int = 0) {
+    fun scheduleDailyReminder(
+        context: Context,
+        hour: Int = 20,
+        minute: Int = 0,
+        policy: ExistingPeriodicWorkPolicy = ExistingPeriodicWorkPolicy.KEEP
+    ) {
         val now = Calendar.getInstance()
         val target = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
@@ -32,7 +37,7 @@ object ReminderScheduler {
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            policy,
             workRequest
         )
     }

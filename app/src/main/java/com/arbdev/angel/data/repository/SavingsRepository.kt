@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -23,7 +25,7 @@ import java.util.UUID
 @Serializable
 data class AngelBackupData(
     val exportTimestamp: Long = System.currentTimeMillis(),
-    val appVersion: String = "1.0.0",
+    val appVersion: String = "1.3.0",
     val goals: List<Goal> = emptyList(),
     val transactions: List<TransactionRecord> = emptyList()
 )
@@ -33,6 +35,7 @@ class SavingsRepository private constructor(context: Context) {
     private val appContext = context.applicationContext
     private val dbHelper = AngelDatabaseHelper(appContext)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val repoMutex = Mutex()
 
     private val _goals = MutableStateFlow<List<Goal>>(emptyList())
     val goals: StateFlow<List<Goal>> = _goals.asStateFlow()
@@ -50,6 +53,7 @@ class SavingsRepository private constructor(context: Context) {
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
+        coerceInputValues = true
     }
 
     init {
@@ -58,7 +62,7 @@ class SavingsRepository private constructor(context: Context) {
         }
     }
 
-    suspend fun refreshData() = withContext(Dispatchers.IO) {
+    private fun refreshDataInternal() {
         val loadedGoals = dbHelper.getAllGoals()
         val loadedTx = dbHelper.getAllTransactions()
         val hasSaved = dbHelper.hasSavedToday()
@@ -96,22 +100,32 @@ class SavingsRepository private constructor(context: Context) {
         }
     }
 
+    suspend fun refreshData() = withContext(Dispatchers.IO) {
+        repoMutex.withLock {
+            refreshDataInternal()
+        }
+    }
+
     suspend fun saveMoney(goalId: String, amount: Double, note: String): Boolean = withContext(Dispatchers.IO) {
         if (amount <= 0.0) return@withContext false
-        val success = dbHelper.addTransaction(goalId, amount, TransactionType.DEPOSIT, note)
-        if (success) {
-            refreshData()
+        repoMutex.withLock {
+            val success = dbHelper.addTransaction(goalId, amount, TransactionType.DEPOSIT, note)
+            if (success) {
+                refreshDataInternal()
+            }
+            success
         }
-        success
     }
 
     suspend fun withdrawMoney(goalId: String, amount: Double, note: String): Boolean = withContext(Dispatchers.IO) {
         if (amount <= 0.0) return@withContext false
-        val success = dbHelper.addTransaction(goalId, amount, TransactionType.WITHDRAW, note)
-        if (success) {
-            refreshData()
+        repoMutex.withLock {
+            val success = dbHelper.addTransaction(goalId, amount, TransactionType.WITHDRAW, note)
+            if (success) {
+                refreshDataInternal()
+            }
+            success
         }
-        success
     }
 
     suspend fun createGoal(
@@ -123,39 +137,45 @@ class SavingsRepository private constructor(context: Context) {
         note: String
     ): Boolean = withContext(Dispatchers.IO) {
         if (title.isBlank() || targetAmount <= 0.0) return@withContext false
-        val newGoal = Goal(
-            id = UUID.randomUUID().toString(),
-            title = title.trim(),
-            targetAmount = targetAmount,
-            currentAmount = 0.0,
-            categoryName = categoryName,
-            targetDateMillis = targetDateMillis,
-            createdAtMillis = System.currentTimeMillis(),
-            colorHex = colorHex,
-            isCompleted = false,
-            note = note.trim()
-        )
-        val success = dbHelper.insertGoal(newGoal)
-        if (success) {
-            refreshData()
+        repoMutex.withLock {
+            val newGoal = Goal(
+                id = UUID.randomUUID().toString(),
+                title = title.trim(),
+                targetAmount = targetAmount,
+                currentAmount = 0.0,
+                categoryName = categoryName,
+                targetDateMillis = targetDateMillis,
+                createdAtMillis = System.currentTimeMillis(),
+                colorHex = colorHex,
+                isCompleted = false,
+                note = note.trim()
+            )
+            val success = dbHelper.insertGoal(newGoal)
+            if (success) {
+                refreshDataInternal()
+            }
+            success
         }
-        success
     }
 
     suspend fun updateGoal(goal: Goal): Boolean = withContext(Dispatchers.IO) {
-        val success = dbHelper.updateGoal(goal)
-        if (success) {
-            refreshData()
+        repoMutex.withLock {
+            val success = dbHelper.updateGoal(goal)
+            if (success) {
+                refreshDataInternal()
+            }
+            success
         }
-        success
     }
 
     suspend fun deleteGoal(goalId: String): Boolean = withContext(Dispatchers.IO) {
-        val success = dbHelper.deleteGoal(goalId)
-        if (success) {
-            refreshData()
+        repoMutex.withLock {
+            val success = dbHelper.deleteGoal(goalId)
+            if (success) {
+                refreshDataInternal()
+            }
+            success
         }
-        success
     }
 
     suspend fun hasSavedToday(): Boolean = withContext(Dispatchers.IO) {
@@ -163,36 +183,39 @@ class SavingsRepository private constructor(context: Context) {
     }
 
     suspend fun exportBackupJson(): String = withContext(Dispatchers.IO) {
-        val backup = AngelBackupData(
-            goals = dbHelper.getAllGoals(),
-            transactions = dbHelper.getAllTransactions()
-        )
-        json.encodeToString(backup)
+        repoMutex.withLock {
+            val backup = AngelBackupData(
+                goals = dbHelper.getAllGoals(),
+                transactions = dbHelper.getAllTransactions()
+            )
+            json.encodeToString(backup)
+        }
     }
 
     suspend fun restoreBackupJson(jsonString: String): Result<Int> = withContext(Dispatchers.IO) {
-        try {
-            val backup = json.decodeFromString<AngelBackupData>(jsonString)
-            if (backup.goals.isEmpty()) {
-                return@withContext Result.failure(Exception("File cadangan tidak berisi data celengan."))
+        repoMutex.withLock {
+            try {
+                val backup = json.decodeFromString<AngelBackupData>(jsonString)
+                if (backup.goals.isEmpty()) {
+                    return@withLock Result.failure(Exception("File cadangan tidak berisi data celengan."))
+                }
+                val success = dbHelper.restoreData(backup.goals, backup.transactions)
+                if (!success) {
+                    return@withLock Result.failure(Exception("Gagal memproses basis data saat pemulihan."))
+                }
+                refreshDataInternal()
+                Result.success(backup.goals.size)
+            } catch (e: Exception) {
+                Result.failure(Exception("Format file cadangan tidak valid: ${e.message}"))
             }
-            dbHelper.clearAllData()
-            for (g in backup.goals) {
-                dbHelper.insertGoal(g)
-            }
-            for (tx in backup.transactions) {
-                dbHelper.addTransaction(tx.goalId, tx.amount, tx.type, tx.note)
-            }
-            refreshData()
-            Result.success(backup.goals.size)
-        } catch (e: Exception) {
-            Result.failure(Exception("Format file cadangan tidak valid: ${e.message}"))
         }
     }
 
     suspend fun clearAllData() = withContext(Dispatchers.IO) {
-        dbHelper.clearAllData()
-        refreshData()
+        repoMutex.withLock {
+            dbHelper.clearAllData()
+            refreshDataInternal()
+        }
     }
 
     companion object {
