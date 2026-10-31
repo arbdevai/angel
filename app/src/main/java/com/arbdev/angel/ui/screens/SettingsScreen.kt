@@ -425,7 +425,7 @@ fun SettingsScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Versi 1.4.0 • Produksi Standar Google",
+                                    text = "Versi 1.4.1 • Produksi Standar Google",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

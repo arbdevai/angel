@@ -1,26 +1,31 @@
 package com.arbdev.angel.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,9 +43,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.arbdev.angel.ui.theme.OnCyberLime
 
 @Composable
 fun AngelCompactDock(
@@ -69,77 +73,114 @@ fun AngelCompactDock(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp),
-            shape = RoundedCornerShape(29.dp),
+                .height(60.dp),
+            shape = RoundedCornerShape(30.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             tonalElevation = 6.dp,
             shadowElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AngelTab.entries.forEach { tab ->
                     val isSelected = currentTab == tab
-                    val iconColor by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        animationSpec = tween(durationMillis = 180),
-                        label = "iconColor"
+
+                    val pillBgColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "pillBgColor"
                     )
+
+                    val contentColor by animateColorAsState(
+                        targetValue = if (isSelected) OnCyberLime else MaterialTheme.colorScheme.onSurfaceVariant,
+                        animationSpec = tween(durationMillis = 180),
+                        label = "contentColor"
+                    )
+
                     val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.12f else 1.0f,
+                        targetValue = if (isSelected) 1.08f else 1.0f,
                         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                         label = "iconScale"
                     )
 
-                    Column(
+                    val horizontalPadding by animateDpAsState(
+                        targetValue = if (isSelected) 14.dp else 10.dp,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "horizontalPadding"
+                    )
+
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(20.dp))
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(pillBgColor)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onTabSelected(tab)
-                            },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                                if (!isSelected) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onTabSelected(tab)
+                                }
+                            }
+                            .padding(horizontal = horizontalPadding),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.title,
-                            tint = iconColor,
-                            modifier = Modifier
-                                .size(21.dp)
-                                .scale(iconScale)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.title,
+                                tint = contentColor,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .scale(iconScale)
+                            )
 
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = tab.title,
-                            fontSize = 10.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = iconColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        // Micro dot indicator
-                        Box(
-                            modifier = Modifier
-                                .size(3.5.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                            AnimatedVisibility(
+                                visible = isSelected,
+                                enter = fadeIn(
+                                    animationSpec = tween(durationMillis = 180, delayMillis = 40)
+                                ) + expandHorizontally(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    ),
+                                    expandFrom = Alignment.Start
+                                ),
+                                exit = fadeOut(
+                                    animationSpec = tween(durationMillis = 100)
+                                ) + shrinkHorizontally(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMedium
+                                    ),
+                                    shrinkTowards = Alignment.Start
                                 )
-                        )
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = tab.title,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = contentColor,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
