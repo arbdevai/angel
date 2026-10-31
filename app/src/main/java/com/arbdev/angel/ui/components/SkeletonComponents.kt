@@ -36,8 +36,8 @@ fun Modifier.shimmerEffect(
     )
 
     val isDark = MaterialTheme.colorScheme.surface.run { (red * 0.299 + green * 0.587 + blue * 0.114) < 0.5 }
-    val baseColor = if (isDark) Color(0xFF2B2020) else Color(0xFFF1E6E5)
-    val highlightColor = if (isDark) Color(0xFF3F3030) else Color(0xFFFFFFFF)
+    val baseColor = if (isDark) Color(0xFF1E1E1E) else Color(0xFFF1E6E5)
+    val highlightColor = if (isDark) Color(0xFF2C2C2C) else Color(0xFFFFFFFF)
 
     val brush = Brush.linearGradient(
         colors = listOf(baseColor, highlightColor, baseColor),

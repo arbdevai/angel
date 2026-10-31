@@ -66,11 +66,11 @@ fun CreateGoalDialog(
     var targetAmountText by remember {
         mutableStateOf(
             if (initialGoal != null) {
-                initialGoal.targetAmount.toInt().toString()
+                com.arbdev.angel.util.Formatters.formatDigitsWithDots(initialGoal.targetAmount.toLong().toString())
             } else if (prefilledTargetAmount > 0.0) {
-                prefilledTargetAmount.toInt().toString()
+                com.arbdev.angel.util.Formatters.formatDigitsWithDots(prefilledTargetAmount.toLong().toString())
             } else {
-                "1000000"
+                "1.000.000"
             }
         )
     }
@@ -115,9 +115,10 @@ fun CreateGoalDialog(
 
                 OutlinedTextField(
                     value = targetAmountText,
-                    onValueChange = { targetAmountText = it.filter { ch -> ch.isDigit() } },
-                    label = { Text("Target Nominal (Rp)") },
-                    placeholder = { Text("Contoh: 5000000") },
+                    onValueChange = { targetAmountText = com.arbdev.angel.util.Formatters.formatDigitsWithDots(it) },
+                    prefix = { Text("Rp ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                    label = { Text("Target Nominal") },
+                    placeholder = { Text("5.000.000") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -199,7 +200,7 @@ fun CreateGoalDialog(
             Button(
                 onClick = {
                     if (isSubmitting) return@Button
-                    val target = targetAmountText.toDoubleOrNull() ?: 0.0
+                    val target = com.arbdev.angel.util.Formatters.cleanDigits(targetAmountText).toDoubleOrNull() ?: 0.0
                     val days = daysText.toIntOrNull() ?: 30
                     if (title.isBlank()) {
                         errorMessage = "Nama target tidak boleh kosong"

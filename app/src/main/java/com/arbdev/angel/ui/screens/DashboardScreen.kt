@@ -293,17 +293,17 @@ private fun TotalBalanceCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+        border = androidx.compose.foundation.BorderStroke(1.dp, com.arbdev.angel.ui.theme.CyberLimeGlow),
+        colors = CardDefaults.cardColors(containerColor = com.arbdev.angel.ui.theme.CyberLime)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.linearGradient(
+                    Brush.verticalGradient(
                         colors = listOf(
-                            HeavenlyBluePrimary,
-                            Color(0xFF1E40AF),
-                            Color(0xFF0F172A)
+                            com.arbdev.angel.ui.theme.CyberLime,
+                            com.arbdev.angel.ui.theme.CyberLimeDark
                         )
                     )
                 )
@@ -318,16 +318,17 @@ private fun TotalBalanceCard(
                     Text(
                         text = "Total Tabungan Terkumpul",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.SemiBold
                     )
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = AngelicGoldSecondary
+                        color = com.arbdev.angel.ui.theme.OnCyberLime
                     ) {
                         Text(
                             text = "${stats.activeGoalsCount} Target Aktif",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
+                            color = com.arbdev.angel.ui.theme.CyberLime,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                         )
@@ -338,8 +339,8 @@ private fun TotalBalanceCard(
                 Text(
                     text = Formatters.formatRupiah(stats.totalBalance),
                     style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = com.arbdev.angel.ui.theme.OnCyberLime,
+                    fontWeight = FontWeight.Black
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -352,13 +353,14 @@ private fun TotalBalanceCard(
                     Text(
                         text = "Total Target: ${Formatters.formatRupiah(stats.totalTarget)}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.75f)
+                        color = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = "${stats.overallProgressPercent}%",
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        fontWeight = FontWeight.Black,
+                        color = com.arbdev.angel.ui.theme.OnCyberLime
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
@@ -368,8 +370,8 @@ private fun TotalBalanceCard(
                         .fillMaxWidth()
                         .height(7.dp)
                         .clip(CircleShape),
-                    color = AngelicGoldSecondary,
-                    trackColor = Color.White.copy(alpha = 0.25f)
+                    color = com.arbdev.angel.ui.theme.OnCyberLime,
+                    trackColor = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.2f)
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -381,22 +383,23 @@ private fun TotalBalanceCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = HeavenlyBluePrimary
+                            containerColor = com.arbdev.angel.ui.theme.OnCyberLime,
+                            contentColor = com.arbdev.angel.ui.theme.CyberLime
                         )
                     ) {
-                        Icon(imageVector = Icons.Rounded.FlashOn, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(imageVector = Icons.Rounded.FlashOn, contentDescription = null, modifier = Modifier.size(18.dp), tint = com.arbdev.angel.ui.theme.CyberLime)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Nabung Hari Ini — ${Formatters.formatRupiah(dailyTarget)}",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = com.arbdev.angel.ui.theme.CyberLime
                         )
                     }
                 } else {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
-                        color = Color.White.copy(alpha = 0.15f)
+                        color = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.12f)
                     ) {
                         Row(
                             modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
@@ -406,7 +409,7 @@ private fun TotalBalanceCard(
                             Icon(
                                 imageVector = Icons.Rounded.CheckCircle,
                                 contentDescription = null,
-                                tint = StreakGreen,
+                                tint = com.arbdev.angel.ui.theme.OnCyberLime,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -414,7 +417,7 @@ private fun TotalBalanceCard(
                                 text = "Sudah Menabung Hari Ini (${Formatters.formatRupiah(dailyTarget)})",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = com.arbdev.angel.ui.theme.OnCyberLime
                             )
                         }
                     }
@@ -427,14 +430,15 @@ private fun TotalBalanceCard(
                 ) {
                     TextButton(
                         onClick = onCustomSaveClick,
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.85f))
+                        colors = ButtonDefaults.textButtonColors(contentColor = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.9f))
                     ) {
-                        Icon(imageVector = Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(imageVector = Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.9f))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Masukkan Nominal Lain",
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.SemiBold,
+                            color = com.arbdev.angel.ui.theme.OnCyberLime.copy(alpha = 0.9f)
                         )
                     }
                 }
@@ -451,12 +455,13 @@ private fun DailyStreakBanner(
     modifier: Modifier = Modifier
 ) {
     val isSaved = streakInfo.hasSavedToday
-    val containerColor = if (isSaved) StreakGreen.copy(alpha = 0.12f) else ReminderAmber.copy(alpha = 0.12f)
-    val accentColor = if (isSaved) StreakGreen else ReminderAmber
+    val containerColor = if (isSaved) com.arbdev.angel.ui.theme.CyberLime.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface
+    val accentColor = if (isSaved) com.arbdev.angel.ui.theme.CyberLime else MaterialTheme.colorScheme.primary
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSaved) com.arbdev.angel.ui.theme.CyberLime.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outline),
         color = containerColor
     ) {
         Row(
@@ -508,10 +513,13 @@ private fun DailyStreakBanner(
                 Button(
                     onClick = onInstantDailySave,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ReminderAmber),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = com.arbdev.angel.ui.theme.CyberLime,
+                        contentColor = com.arbdev.angel.ui.theme.OnCyberLime
+                    ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Text("Nabung", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text("Nabung", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = com.arbdev.angel.ui.theme.OnCyberLime)
                 }
             }
         }
@@ -529,7 +537,8 @@ private fun GoalMiniCard(
             .width(230.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

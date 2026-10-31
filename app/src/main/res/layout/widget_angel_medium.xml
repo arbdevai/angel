@@ -60,7 +60,7 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="Rp 0 / Rp 1.000.000"
-        android:textColor="#93C5FD"
+        android:textColor="#A2FF01"
         android:textSize="12.5sp"
         android:textStyle="bold" />
 
@@ -102,7 +102,7 @@
             android:paddingEnd="8dp"
             android:text="⚡ Setor"
             android:textAllCaps="false"
-            android:textColor="#FFFFFF"
+            android:textColor="#141414"
             android:textSize="10.5sp"
             android:textStyle="bold" />
     </LinearLayout>

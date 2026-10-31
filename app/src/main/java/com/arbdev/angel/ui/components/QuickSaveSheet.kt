@@ -57,7 +57,7 @@ fun QuickSaveSheet(
     onCreateGoalClick: () -> Unit = {}
 ) {
     var selectedGoalId by remember(goals) { mutableStateOf(goals.firstOrNull()?.id ?: "") }
-    var amountText by remember { mutableStateOf("20000") }
+    var amountText by remember { mutableStateOf(Formatters.formatDigitsWithDots("20000")) }
     var noteText by remember { mutableStateOf("Tabungan harian Angel") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -159,6 +159,10 @@ fun QuickSaveSheet(
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { selectedGoalId = goal.id },
                             shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            ),
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         ) {
                             Row(
@@ -205,10 +209,11 @@ fun QuickSaveSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     quickPills.forEach { pill ->
-                        val isSelected = amountText == pill.toInt().toString()
+                        val pillFormatted = Formatters.formatDigitsWithDots(pill.toLong().toString())
+                        val isSelected = amountText == pillFormatted
                         FilterChip(
                             selected = isSelected,
-                            onClick = { amountText = pill.toInt().toString() },
+                            onClick = { amountText = pillFormatted },
                             label = {
                                 Text(
                                     text = Formatters.formatRupiah(pill),
@@ -229,11 +234,12 @@ fun QuickSaveSheet(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = {
-                        amountText = it.filter { char -> char.isDigit() }
+                        amountText = Formatters.formatDigitsWithDots(it)
                         errorMessage = null
                     },
-                    label = { Text("Nominal Setoran (Rp)") },
-                    placeholder = { Text("Contoh: 20000") },
+                    prefix = { Text("Rp ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                    label = { Text("Nominal Setoran") },
+                    placeholder = { Text("20.000") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     isError = errorMessage != null,
@@ -259,7 +265,7 @@ fun QuickSaveSheet(
 
                 Button(
                     onClick = {
-                        val amount = amountText.toDoubleOrNull() ?: 0.0
+                        val amount = Formatters.cleanDigits(amountText).toDoubleOrNull() ?: 0.0
                         if (amount <= 0.0) {
                             errorMessage = "Masukkan nominal setoran yang valid"
                             return@Button

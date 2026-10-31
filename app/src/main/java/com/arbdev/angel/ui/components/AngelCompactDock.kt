@@ -72,6 +72,7 @@ fun AngelCompactDock(
                 .height(58.dp),
             shape = RoundedCornerShape(29.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             tonalElevation = 6.dp,
             shadowElevation = 8.dp
         ) {

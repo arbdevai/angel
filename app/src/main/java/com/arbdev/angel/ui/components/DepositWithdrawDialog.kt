@@ -115,10 +115,11 @@ fun DepositWithdrawDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     quickPills.forEach { pill ->
-                        val isSelected = amountText == pill.toInt().toString()
+                        val pillFormatted = Formatters.formatDigitsWithDots(pill.toLong().toString())
+                        val isSelected = amountText == pillFormatted
                         FilterChip(
                             selected = isSelected,
-                            onClick = { amountText = pill.toInt().toString() },
+                            onClick = { amountText = pillFormatted },
                             label = {
                                 Text(
                                     text = Formatters.formatRupiah(pill),
@@ -134,11 +135,12 @@ fun DepositWithdrawDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = {
-                        amountText = it.filter { ch -> ch.isDigit() }
+                        amountText = Formatters.formatDigitsWithDots(it)
                         errorMessage = null
                     },
-                    label = { Text("Nominal (Rp)") },
-                    placeholder = { Text("Contoh: 50000") },
+                    prefix = { Text("Rp ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                    label = { Text("Nominal") },
+                    placeholder = { Text("50.000") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     isError = errorMessage != null,
@@ -164,7 +166,7 @@ fun DepositWithdrawDialog(
             Button(
                 onClick = {
                     if (isSubmitting) return@Button
-                    val amount = amountText.toDoubleOrNull() ?: 0.0
+                    val amount = Formatters.cleanDigits(amountText).toDoubleOrNull() ?: 0.0
                     if (amount <= 0.0) {
                         errorMessage = "Masukkan nominal yang valid"
                         return@Button

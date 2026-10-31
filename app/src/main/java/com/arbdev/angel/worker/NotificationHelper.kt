@@ -104,7 +104,7 @@ object NotificationHelper {
                     .bigText(message)
                     .setSummaryText("Target Tabungan Harian")
             )
-            .setColor(0xFF2563EB.toInt())
+            .setColor(0xFFA2FF01.toInt())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

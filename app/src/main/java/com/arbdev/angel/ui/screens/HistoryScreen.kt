@@ -91,6 +91,7 @@ fun HistoryScreen(
                     .fillMaxWidth()
                     .padding(bottom = 14.dp),
                 shape = RoundedCornerShape(20.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {

@@ -1,5 +1,6 @@
 package com.arbdev.angel.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arbdev.angel.ui.theme.OnCyberLime
 import com.arbdev.angel.ui.theme.StreakGreen
 import com.arbdev.angel.ui.theme.StreakGreenContainer
 import java.text.SimpleDateFormat
@@ -51,7 +53,8 @@ fun WeeklyStreakIndicator(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.padding(14.dp)
@@ -106,7 +109,7 @@ fun WeeklyStreakIndicator(
                                 Icon(
                                     imageVector = Icons.Rounded.Check,
                                     contentDescription = "Tercatat",
-                                    tint = Color.White,
+                                    tint = OnCyberLime,
                                     modifier = Modifier.size(18.dp)
                                 )
                             } else {

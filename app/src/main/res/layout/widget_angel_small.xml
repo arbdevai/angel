@@ -62,7 +62,7 @@
         android:paddingEnd="10dp"
         android:text="+20k"
         android:textAllCaps="false"
-        android:textColor="#FFFFFF"
+        android:textColor="#141414"
         android:textSize="11sp"
         android:textStyle="bold" />
 

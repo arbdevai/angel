@@ -33,6 +33,17 @@ object Formatters {
         }
     }
 
+    fun formatDigitsWithDots(rawInput: String): String {
+        val digits = rawInput.filter { it.isDigit() }
+        if (digits.isEmpty()) return ""
+        val num = digits.toLongOrNull() ?: return digits
+        return String.format(Locale.US, "%,d", num).replace(',', '.')
+    }
+
+    fun cleanDigits(formattedInput: String): String {
+        return formattedInput.filter { it.isDigit() }
+    }
+
     fun formatDate(millis: Long): String {
         if (millis <= 0L) return "-"
         return try {

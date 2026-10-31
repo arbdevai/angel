@@ -82,7 +82,7 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
 
                     val saveBtnText = if (hasSavedToday) "✓ Sudah Nabung" else "⚡ Nabung ${Formatters.formatRupiah(dailyTarget)}"
                     val streakText = if (hasSavedToday) "✓ $currentStreak Hari" else "Belum Nabung"
-                    val streakColor = if (hasSavedToday) Color.parseColor("#10B981") else Color.parseColor("#F59E0B")
+                    val streakColor = if (hasSavedToday) Color.parseColor("#A2FF01") else Color.parseColor("#FBBF24")
 
                     // 1. Small View (2x2)
                     val smallViews = RemoteViews(context.packageName, R.layout.widget_angel_small).apply {
@@ -184,6 +184,11 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
                         )
                         if (success) {
                             NotificationHelper.playChimeSound(context)
+                            try {
+                                val notificationManager = androidx.core.app.NotificationManagerCompat.from(context)
+                                notificationManager.cancel(NotificationHelper.NOTIFICATION_ID)
+                            } catch (_: Exception) {
+                            }
                         }
                     }
                 } finally {

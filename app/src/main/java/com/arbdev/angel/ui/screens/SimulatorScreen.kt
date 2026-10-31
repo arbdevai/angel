@@ -62,8 +62,8 @@ fun SimulatorScreen(
     currentDailyTarget: Double,
     onCreateGoalFromMilestone: (title: String, targetAmount: Double, category: GoalCategory, days: Int) -> Unit
 ) {
-    var nominalText by remember { mutableStateOf(currentDailyTarget.toInt().toString()) }
-    val nominal = nominalText.toDoubleOrNull() ?: currentDailyTarget
+    var nominalText by remember { mutableStateOf(Formatters.formatDigitsWithDots(currentDailyTarget.toLong().toString())) }
+    val nominal = Formatters.cleanDigits(nominalText).toDoubleOrNull() ?: currentDailyTarget
 
     val quickPills = listOf(10000.0, 20000.0, 50000.0, 100000.0)
 
@@ -108,7 +108,8 @@ fun SimulatorScreen(
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,7 +145,7 @@ fun SimulatorScreen(
                             val isSelected = nominal == pill
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { nominalText = pill.toInt().toString() },
+                                onClick = { nominalText = Formatters.formatDigitsWithDots(pill.toLong().toString()) },
                                 label = {
                                     Text(
                                         text = Formatters.formatRupiah(pill),
@@ -159,9 +160,10 @@ fun SimulatorScreen(
 
                     OutlinedTextField(
                         value = nominalText,
-                        onValueChange = { nominalText = it.filter { ch -> ch.isDigit() } },
-                        label = { Text("Nominal Harian (Rp)") },
-                        placeholder = { Text("Contoh: 20000") },
+                        onValueChange = { nominalText = Formatters.formatDigitsWithDots(it) },
+                        prefix = { Text("Rp ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                        label = { Text("Nominal Harian") },
+                        placeholder = { Text("20.000") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -214,7 +216,8 @@ private fun MilestoneCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
