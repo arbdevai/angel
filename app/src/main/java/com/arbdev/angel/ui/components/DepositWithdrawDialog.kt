@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +44,7 @@ fun DepositWithdrawDialog(
     var amountText by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     val quickPills = listOf(10000.0, 20000.0, 50000.0, 100000.0)
 
@@ -160,6 +162,7 @@ fun DepositWithdrawDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (isSubmitting) return@Button
                     val amount = amountText.toDoubleOrNull() ?: 0.0
                     if (amount <= 0.0) {
                         errorMessage = "Masukkan nominal yang valid"
@@ -169,8 +172,10 @@ fun DepositWithdrawDialog(
                         errorMessage = "Saldo tidak cukup (maksimal ${Formatters.formatRupiah(goal.currentAmount)})"
                         return@Button
                     }
+                    isSubmitting = true
                     onConfirm(amount, selectedType, noteText)
                 },
+                enabled = !isSubmitting,
                 shape = RoundedCornerShape(12.dp),
                 colors = if (selectedType == TransactionType.WITHDRAW) {
                     ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
@@ -178,7 +183,17 @@ fun DepositWithdrawDialog(
                     ButtonDefaults.buttonColors()
                 }
             ) {
-                Text(if (selectedType == TransactionType.DEPOSIT) "Setor Saldo" else "Tarik Saldo", fontWeight = FontWeight.Bold)
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Memproses...")
+                } else {
+                    Text(if (selectedType == TransactionType.DEPOSIT) "Setor Saldo" else "Tarik Saldo", fontWeight = FontWeight.Bold)
+                }
             }
         },
         dismissButton = {

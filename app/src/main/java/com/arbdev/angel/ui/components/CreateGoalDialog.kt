@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -77,6 +78,7 @@ fun CreateGoalDialog(
     var daysText by remember { mutableStateOf(if (prefilledDays > 0) prefilledDays.toString() else "30") }
     var note by remember { mutableStateOf(initialGoal?.note ?: "") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -196,6 +198,7 @@ fun CreateGoalDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    if (isSubmitting) return@Button
                     val target = targetAmountText.toDoubleOrNull() ?: 0.0
                     val days = daysText.toIntOrNull() ?: 30
                     if (title.isBlank()) {
@@ -206,11 +209,23 @@ fun CreateGoalDialog(
                         errorMessage = "Nominal target harus lebih dari 0"
                         return@Button
                     }
+                    isSubmitting = true
                     onConfirm(title.trim(), target, selectedCategory, days, note.trim())
                 },
+                enabled = !isSubmitting,
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(if (initialGoal == null) "Simpan Target" else "Simpan Perubahan", fontWeight = FontWeight.Bold)
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Menyimpan...")
+                } else {
+                    Text(if (initialGoal == null) "Simpan Target" else "Simpan Perubahan", fontWeight = FontWeight.Bold)
+                }
             }
         },
         dismissButton = {

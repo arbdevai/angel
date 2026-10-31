@@ -376,14 +376,15 @@ class MainActivity : ComponentActivity() {
                         goal = goal,
                         onDismiss = { activeDepositGoal = null },
                         onConfirm = { amount, type, note ->
+                            val currentDepositGoal = goal
+                            activeDepositGoal = null
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             coroutineScope.launch {
                                 val ok = if (type == com.arbdev.angel.data.model.TransactionType.DEPOSIT) {
-                                    repository.saveMoney(goal.id, amount, note)
+                                    repository.saveMoney(currentDepositGoal.id, amount, note)
                                 } else {
-                                    repository.withdrawMoney(goal.id, amount, note)
+                                    repository.withdrawMoney(currentDepositGoal.id, amount, note)
                                 }
-                                activeDepositGoal = null
                                 if (ok) {
                                     if (type == com.arbdev.angel.data.model.TransactionType.DEPOSIT) {
                                         NotificationHelper.playChimeSound(applicationContext)
@@ -410,10 +411,16 @@ class MainActivity : ComponentActivity() {
                             prefillTargetAmount = 0.0
                         },
                         onConfirm = { title, targetAmount, category, daysToTarget, note ->
+                            val currentEditTarget = activeEditGoal
+                            showCreateGoalDialog = false
+                            activeEditGoal = null
+                            prefillTitle = ""
+                            prefillTargetAmount = 0.0
+
                             coroutineScope.launch {
                                 val targetDateMillis = System.currentTimeMillis() + (daysToTarget.toLong() * 24 * 60 * 60 * 1000)
-                                if (activeEditGoal != null) {
-                                    val updated = activeEditGoal!!.copy(
+                                if (currentEditTarget != null) {
+                                    val updated = currentEditTarget.copy(
                                         title = title,
                                         targetAmount = targetAmount,
                                         categoryName = category.name,
@@ -435,10 +442,6 @@ class MainActivity : ComponentActivity() {
                                     snackbarHostState.showSnackbar("Celengan baru berhasil dibuat.")
                                 }
                                 AngelAppWidgetProvider.updateAllWidgets(applicationContext)
-                                showCreateGoalDialog = false
-                                activeEditGoal = null
-                                prefillTitle = ""
-                                prefillTargetAmount = 0.0
                             }
                         }
                     )

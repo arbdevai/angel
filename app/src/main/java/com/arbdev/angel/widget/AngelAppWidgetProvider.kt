@@ -148,13 +148,13 @@ class AngelAppWidgetProvider : AppWidgetProvider() {
                     // Responsive RemoteViews untuk Android 12+ (API 31+) & Android 14 (API 34+)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val viewMapping = mapOf(
-                            SizeF(120f, 90f) to smallViews,
-                            SizeF(200f, 100f) to mediumViews,
-                            SizeF(240f, 200f) to largeViews
+                            SizeF(100f, 40f) to smallViews,
+                            SizeF(180f, 70f) to mediumViews,
+                            SizeF(240f, 130f) to largeViews
                         )
                         appWidgetManager.updateAppWidget(widgetId, RemoteViews(viewMapping))
                     } else {
-                        appWidgetManager.updateAppWidget(widgetId, mediumViews)
+                        appWidgetManager.updateAppWidget(widgetId, smallViews)
                     }
                 }
             } finally {
