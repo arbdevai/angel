@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arbdev.angel.ui.theme.OnCyberLime
 import com.arbdev.angel.ui.theme.StreakGreen
-import com.arbdev.angel.ui.theme.StreakGreenContainer
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale

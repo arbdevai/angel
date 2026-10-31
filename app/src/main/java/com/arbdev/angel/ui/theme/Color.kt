@@ -48,4 +48,5 @@ val HeavenlyBlueOnContainer = CyberLime
 val AngelicGoldSecondary = CyberLime
 val AngelicGoldOnSecondary = OnCyberLime
 val StreakGreen = CyberLime
+val StreakGreenContainer = DarkElevated
 val ReminderAmber = StatusWarning
